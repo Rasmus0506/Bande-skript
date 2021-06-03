@@ -1,0 +1,735 @@
+
+options:
+	#HVAD DET KOSTER AT OPRETTE EN BANDE
+	price: 0
+	
+	#MAIN FARVEN (TIL TING SOM SKAL FREMHÆVES)
+	mainColor: &3
+	
+	#MINDRE VIGTIGE FARVE
+	secondColor: &f
+
+
+on load:
+	#PREFIX
+	set {bande.global.prefix} to "{@mainColor}Bande &8|{@secondColor}"
+
+on chat:
+	if {bande.%uuid of player%} is set:
+		if {bande.owner.%{bande.%uuid of player%}%} is player:
+			set chat format to "&8[%{bande.color.%{bande.%uuid of player%}%}%**%{bande.%uuid of player%}%&8] &8[%{bande.color.%{bande.%uuid of player%}%}%%{bande.level.%{bande.%uuid of player%}%}%&8] &8: %colored player's prefix% &8: &7%player% &8➢ &7%message%"
+		else if {bande.rank.%uuid of player%} = "Assistant":
+			set chat format to "&8[%{bande.color.%{bande.%uuid of player%}%}%*%{bande.%uuid of player%}%&8] &8[%{bande.color.%{bande.%uuid of player%}%}%%{bande.level.%{bande.%uuid of player%}%}%&8] &8: %colored player's prefix% &8: &7%player% &8➢ &7%message%"
+		else:
+			set chat format to "&8[%{bande.color.%{bande.%uuid of player%}%}%%{bande.%uuid of player%}%&8] &8[%{bande.color.%{bande.%uuid of player%}%}%%{bande.level.%{bande.%uuid of player%}%}%&8] &8: %colored player's prefix% &8: &7%player% &8➢ &7%message%"
+	if {bande.%uuid of player%} is not set:
+		set chat format to "%colored player's prefix% &8: &7%player% &8➢ &7%message%" 
+
+on death of player:
+	attacker is a player:
+		{bande.%uuid of attacker%} is set:
+			victim has permission "vagt.sk":
+				add 1 to {bande.vagt.kills.%{bande.%uuid of attacker%}%}
+			else:
+				add 1 to {bande.fange.kills.%{bande.%uuid of attacker%}%}
+
+on damage of player:
+	attacker is a player:
+		{bande.%uuid of attacker%} is set:
+			{bande.%uuid of victim%} is set:
+				{bande.%uuid of attacker%} = {bande.%uuid of victim%}:
+					{bande.damage.%{bande.%uuid of attacker%}%} is set:
+						set {_chance} to a random integer between 0 and 100
+						if {_chance} is between 0 and {bande.damage.%{bande.%uuid of attacker%}%}:
+							cancel event
+						else:
+							stop
+					else:
+						stop
+		
+		
+function bandeMain(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_bandemain} to chest inventory with 5 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lMAIN"
+	set slot 0, 2, 4, 6, 8, 36, 38, 40, 42 and 44 of {_bandemain} to blue stained glass pane named " " with lore " "
+	set slot 1, 3, 5, 7, 37, 39, 41 and 43 of {_bandemain} to white stained glass pane named " " with lore " "
+	if {bande.%{_uuid}%} is not set:
+		set slot 22 of {_bandemain} to name tag named "&3&n&oOPRET EN BANE" with lore "&7Tryk her||&7for at||&7oprette din||&7helt egen||&7&n&obande&7!||&c&nKOSTER&8: &c&n{@price}"
+	else:
+		set slot 25 of {_bandemain} to skull of ("%{bande.owner.%{bande.%{_uuid}%}%}%" parsed as a offline player) named "&3&nMEDLEMMER" with lore "&7Klik her for at se||&7Medlemmerne af din bande||&7Og redigere deres ranks osv."
+		set slot 19 of {_bandemain} to redstone repeater named "&3&nINFORMATION" with lore "&bEjer&8: &7%{bande.owner.%{bande.%{_uuid}%}%}%||&bLevel&8: &7%{bande.level.%{bande.%{_uuid}%}%}%||&bI Banken&8: &7%{bande.bal.%{bande.%{_uuid}%}%}%||&bFange kills&8: &7%{bande.fange.kills.%{bande.%{_uuid}%}%}%||&bVagt kills&8: &7%{bande.vagt.kills.%{bande.%{_uuid}%}%}%"
+		set slot 21 of {_bandemain} to emerald named "&3&nPENGE" with lore "&fAlt der har med penge at gøre||&8[&2+&8] &fBank||&8[&2+&8] &fShop||&8[&2+&8] &fLevel"
+		set slot 23 of {_bandemain} to anvil named "&3&nKommandoer:" with lore "&8[&2+&8] &fBande opret||&8[&2+&8] &fBande forlad||&8[&2+&8] &fBande inviter||&8[&2+&8] &fBande accepter||&8[&2+&8] &fBande bank||&8[&2+&8] &fBande level||&8[&2+&8] &fBande shop||&8[&2+&8] &fBande promote||&8[&2+&8] &fBande demote||&8[&2+&8] &fBande kick"
+	open {_bandemain} to {_p}
+
+function bandeOpret(p: player, bande: string):
+	set {_uuid} to uuid of {_p}
+	if {bande.%{_uuid}%} is not set:
+		if {_p}'s balance >= {@price}:
+			set {bande.%{_uuid}%} to {_bande}
+			set {bande.bal.%{_bande}%} to 0
+			set {bande.owner.%{_bande}%} to "%{_p}%"
+			add {_p} to {bande.members.%{_bande}%::*}
+			add {_bande} to {bande.list::*}
+			set {bande.color.%{_bande}%} to "&b"
+			set {bande.level.%{_bande}%} to 1
+			set {bande.max.members.%{_bande}%} to 3
+			set {bande.fange.kills.%{_bande}%} to 0
+			set {bande.vagt.kills.%{_bande}%} to 0
+			subtract {@price} from {_p}'s balance
+			send "%{bande.global.prefix}% Oprettede banden {@mainColor}%{_bande}%" to {_p}
+		else:
+			send "%{bande.global.prefix}% Dette har du ikke råd til &8({@secondColor}Koster&8: {@secondColor}{@price}&8)" to {_p}
+	else:
+		send "%{bande.global.prefix}% Du er allerede med i en bande!" to {_p}
+		
+function forladBande(p: player):
+	set {_uuid} to uuid of {_p}
+	if {bande.%{_uuid}%} is set:
+		if {bande.owner.%{bande.%{_uuid}%}%} != {_p}:
+			remove {_p} from {bande.members.%{bande.%{_uuid}%}%::*}
+			delete {bande.%{_uuid}%}
+			delete {bande.rank.%{_uuid}%}
+			send "%{bande.global.prefix}% Du forlod din bande" to {_p}
+		else:
+			delete {bande.max.members.%{bande.%{_uuid}%}%}
+			delete {bande.bal.%{bande.%{_uuid}%}%}
+			delete {bande.owner.%{bande.%{_uuid}%}%}
+			remove {bande.%{_uuid}%} from {bande.list::*}
+			delete {bande.color.%{bande.%{_uuid}%}%}
+			delete {bande.level.%{bande.%{_uuid}%}%}
+			loop {bande.members.%{bande.%{_uuid}%}%::*}:
+				loop-value != {_p}:
+					set {_member} to ("%loop-value%" parsed as a offline player)
+					set {_uuidmember} to uuid of {_member}
+					delete {bande.rank.%{_uuidmember}%}
+					delete {bande.%{_uuidmember}%}
+					send "%{bande.global.prefix}% Din bande er dsv. blevet slettet da ejeren forlod banden" to loop-value
+			delete {bande.members.%{bande.%{_uuid}%}%::*}
+			delete {bande.%{_uuid}%}
+			send "%{bande.global.prefix}% Din bande er blevet slettet." to {_p}
+
+function bandeInvite(p: player, target: player):
+	set {_uuid} to uuid of {_p}
+	set {_dif} to difference between {last.invited.%{_target}%.%{bande.%{_uuid}%}%} and now
+	set {_s} to size of {bande.members.%{bande.%{_uuid}%}%::*}
+	if {_s} < {bande.max.members.%{bande.%{_uuid}%}%}:
+		if {_dif} <= 1 minute:
+			send "%{bande.global.prefix}% Der skal gå 1 min. imellem invites!" to {_p}
+		else:
+			set {bande.invite.%{_target}%} to {bande.%{_uuid}%}
+			set {last.invited.%{_target}%.%{bande.%{_uuid}%}%} to now
+			send "%{bande.global.prefix}% Du er blevet inviteret til at joine banden {@mainColor}%{bande.%{_uuid}%}%{@secondColor} Tryk her for at acceptere &8[<tooltip:&7Klik for at acceptere%nl%&7Invitationen fra {@mainColor}%{bande.%{_uuid}%}%!><cmd:/bande accepter> &a&lAccepter <reset>&8]" to {_target}
+			send "%{bande.global.prefix}% Du har inviteret {@mainColor}%{_target}%{@secondColor} til din bande" to {_p}
+	else:
+		send "%{bande.global.prefix}% Der er ikke mere plads i din bande, /bande shop" to {_p}
+
+function bandeAccepter(p: player):
+	set {_s} to size of {bande.members.%{bande.invite.%{_p}%}%::*}
+	if {_s} < {bande.max.members.%{bande.invite.%{_p}%}%}:
+		set {_uuid} to uuid of {_p}
+		set {bande.%{_uuid}%} to {bande.invite.%{_p}%}
+		send "%{bande.global.prefix}% {@mainColor}%{_p}%{@secondColor} Joinede din bande!" to {bande.members.%{bande.%{_uuid}%}%::*}
+		add {_p} to {bande.members.%{bande.%{_uuid}%}%::*}
+		send "%{bande.global.prefix}% Du joinede banden {@mainColor}%{bande.%{_uuid}%}%" to {_p}
+		set {bande.rank.%{_uuid}%} to "Medlem" 
+		delete {bande.invite.%{_p}%}
+		delete {last.invited.%{_p}%.%{bande.%{_uuid}%}%}
+	else:
+		send "%{bande.global.prefix}% Der er dsv. ikke plads i banden" to {_p}
+
+function bandeMedlemmer(p: player):
+	set {_uuid} to uuid of {_p}
+	if {bande.%{_uuid}%} is set:
+		set {_bandemedlemmer} to chest inventory with 6 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lMEDLEMMER"
+		set {_slot} to 9
+		loop {bande.members.%{bande.%{_uuid}%}%::*}:
+			if {bande.owner.%{bande.%{_uuid}%}%} is not loop-value:
+				if ("%loop-value%" parsed as a offline player) is online:
+					set {_status} to "&aOnline"
+				else:
+					set {_status} to "&cOffline"
+				set {_member} to ("%loop-value%" parsed as a offline player)
+				set {_uuidmember} to uuid of {_member}
+				set slot {_slot} of {_bandemedlemmer} to skull of ("%{_member}%" parsed as a offline player) named "%loop-value%" with lore "&fRank&8: &a%{bande.rank.%{_uuidmember}%}%||&fStatus&8: %{_status}%"
+				add 1 to {_slot}
+		if ("%{bande.owner.%{bande.%{_uuid}%}%}%" parsed as a offline player) is online:
+			set {_status} to "&aOnline"
+		else:
+			set {_status} to "&cOffline"
+		set slot 4 of {_bandemedlemmer} to skull of ("%{bande.owner.%{bande.%{_uuid}%}%}%" parsed as a offline player) named "%{bande.owner.%{bande.%{_uuid}%}%}%" with lore "&fRank&8: &cOwner||&fStatus&8: %{_status}%"
+		open {_bandemedlemmer} to {_p}
+
+
+function bandeManage(p: player, t: text):
+	close {_p}'s inventory
+	set {_uuid} to uuid of {_p}
+	set {_member} to ("%{_t}%" parsed as a offline player)
+	if {_member} != {bande.owner.%{bande.%{_uuid}%}%}:
+		set {_um} to uuid of {_member}
+		set {_managemenu} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lMANAGE &8➜ {@mainColor}&l%{_member}%"
+		set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_managemenu} to blue stained glass pane named " " with lore " "
+		set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_managemenu} to white stained glass pane named " " with lore " "
+		if {bande.rank.%{_um}%} = "Medlem":
+			set slot 11 of {_managemenu} to prismarine shard named "&3&nPROMOTE" with lore "&bMedlem &8➜ &bAssistant"
+			set slot 13 of {_managemenu} to shiny redstone named "&3&nDEMOTE" with lore "&bKan ikke demotes mere"
+		else if {bande.rank.%{_um}%} = "Assistant":
+			set slot 11 of {_managemenu} to prismarine shard named "&3&nPROMOTE" with lore "&bAssistant &8➜ &cOwner"
+			set slot 13 of {_managemenu} to redstone named "&3&nDEMOTE" with lore "&bAssistant &8➜ &bMedlem"
+		set slot 15 of {_managemenu} to TNT named "&3&nKICK" with lore "&7Kick spilleren &b%{_member}%"
+		set {chosen.manager.%{bande.%{_uuid}%}%} to {_member}
+		open {_managemenu} to {_p}
+
+function bandeKick(p: player, t: player):
+	close {_p}'s inventory
+	set {_uuid} to uuid of {_p}
+	set {_um} to uuid of {_t}
+	remove {_t} from {bande.members.%{bande.%{_uuid}%}%::*}
+	delete {bande.%{_um}%}
+	delete {bande.rank.%{_um}%}
+	send "%{bande.global.prefix}% Du er blevet kicket fra din bande!" to {_t}
+	send "%{bande.global.prefix}% {@mainColor}%{_t}% {@secondColor}er blevet kicket fra din bande!" to {bande.members.%{bande.%{_uuid}%}%::*}
+
+function bandePromote(p: player, t: player):
+	set {_uuid} to uuid of {_p}
+	set {_um} to uuid of {_t}
+	if {bande.rank.%{_um}%} = "Medlem":
+		set {bande.rank.%{_um}%} to "Assistant"
+		send "%{bande.global.prefix}% Du er blevet forfremmet til {@mainColor}Assistant{@secondColor}!" to {_t}
+		send "%{bande.global.prefix}% Du har forfremmet {@mainColor}%{_t}% {@secondColor}til {@mainColor}Assistant{@secondColor}!" to {_p}
+		bandeManage({_p}, "%{_t}%")
+	else if {bande.rank.%{_um}%} = "Assistant":
+		set {bande.owner.%{bande.%{_uuid}%}%} to "%{_t}%"
+		set {bande.rank.%{_uuid}%} to "Medlem"
+		send "%{bande.global.prefix}% Du er blevet forfremmet til {@mainColor}Owner{@secondColor}!" to {_t}
+		send "%{bande.global.prefix}% Du har forfremmet {@mainColor}%{_t}% {@secondColor}til {@mainColor}Owner{@secondColor}!" to {_p}
+		bandeManage({_p}, "%{_t}%")
+	else:
+		broadcast "%{bande.global.prefix}% Error! Kontakt en adminstrator, eller {@mainColor}PepeSquad_##6558 {@secondColor}på discord!"
+
+function bandeDemote(p: player, t: player):
+	set {_uuid} to uuid of {_p}
+	set {_um} to uuid of {_t}
+	if {bande.rank.%{_um}%} = "Assistant":
+		set {bande.rank.%{_um}%} to "Medlem"
+		send "%{bande.global.prefix}% Du er blevet demotet fra {@mainColor}Assistant{@secondColor} til {@mainColor}Medlem!" to {_t}
+		send "%{bande.global.prefix}% Du har demotet {@mainColor}%{_t}% {@secondColor}fra {@mainColor}Assistant{@secondColor} til {@mainColor}Medlem!" to {_p}
+		bandeManage({_p}, "%{_t}%")
+
+function bandePenge(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_pengegui} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lØKONOMI"
+	set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_managemenu} to blue stained glass pane named " " with lore " "
+	set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_managemenu} to white stained glass pane named " " with lore " "
+	if {bande.owner.%{bande.%{_uuid}%}%} is {_p}:
+		set slot 10 of {_pengegui} to sunflower named "&3&nBANK" with lore "&7Klik her!"
+		set slot 13 of {_pengegui} to bottle o' enchanting named "&3&nLEVEL" with lore "&7Klik her!"
+		set slot 16 of {_pengegui} to sign item named "&3&nSHOP" with lore "&7Klik her!"
+	else:
+		set slot 12 of {_pengegui} to emerald named "&3&nBANK" with lore "&7Din bande har||&a$&7%{bande.bal.%{bande.%{_uuid}%}%}%||&7I bande-banken"
+	open {_pengegui} to {_p}
+
+function bandeBank(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_bandebank} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lBANK"
+	set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_bandebank} to blue stained glass pane named " " with lore " "
+	set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_bandebank} to white stained glass pane named " " with lore " "
+	set slot 22 of {_bandebank} to emerald named "&3&nI DIN BANDE BANK" with lore "&a$&7%{bande.bal.%{bande.%{_uuid}%}%}%"
+	set slot 12 of {_bandebank} to golden nugget named "&3&nDEPOSIT/INDSÆT" with lore "&7Brug /Bande deposit (antal)||&7Eller tryk her!"
+	if {bande.owner.%{bande.%{_uuid}%}%} is {_p}:
+		set slot 14 of {_bandebank} to redstone_torch_on named "&3&nWITHDRAW" with lore "&7Brug /Bande withdraw (antal)||&7Eller tryk her!"
+	else:
+		set slot 14 of {_bandebank} to barrier named "&3&nWITHDRAW" with lore "&cKun for ejeren af banden!"
+	open {_bandebank} to {_p}
+
+function bandeLevel(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_bandelevel} to chest inventory with 5 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lLEVEL"
+	set slot 0, 2, 4, 6, 8, 36, 38, 40, 42 and 44 of {_bandelevel} to blue stained glass pane named " " with lore " "
+	set slot 1, 3, 5, 7, 37, 39, 41 and 43 of {_bandelevel} to white stained glass pane named " " with lore " "
+	set slot 20 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 1" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &73 Medlemmer maks.||    &8● &7Lyseblå bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 2:
+		set slot 21 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 2" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &75 Medlemmer maks.||    &8● &7Lysegrøn bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 21 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 2" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n2 &cskal du&8:||    &8● &7Have 3 Medlemmer||    &8● &7Mindst have &a$&72500 i bande-banken (bliver taget)||    &8● &7Mindst have 10 fangekills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 3:
+		set slot 22 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 3" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &76 Medlemmer maks.||    &8● &7Pink bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 22 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 3" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n3 &cskal du&8:||    &8● &7Have 4 Medlemmer||    &8● &7Mindst have &a$&75000 i bande-banken (bliver taget)||    &8● &7Mindst have 25 fangekills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 4:
+		set slot 23 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 4" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &78 Medlemmer maks.||    &8● &7Guld bande-farve||    &8● &7Adgang til at købe bande-skade||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 23 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 4" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n4 &cskal du&8:||    &8● &7Have 6 Medlemmer||    &8● &7Mindst have &a$&77500 i bande-banken (bliver taget)||    &8● &7Mindst have 40 fangekills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 5:
+		set slot 24 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 5" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &710 Medlemmer maks.||    &8● &7Cyan bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 24 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 5" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n5 &cskal du&8:||    &8● &7Have 7 Medlemmer||    &8● &7Mindst have &a$&712500 i bande-banken (bliver taget)||    &8● &7Mindst have 50 fangekills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 6:
+		set slot 29 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 6" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &713 Medlemmer maks.||    &8● &7Mørkegrøn bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 29 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 6" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n6 &cskal du&8:||    &8● &7Have 12 Medlemmer||    &8● &7Mindst have &a$&715000 i bande-banken (bliver taget)||    &8● &7Mindst have 75 fangekills||    &8● &7Mindst 1 vagtkill||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 7:
+		set slot 30 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 7" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &715 Medlemmer maks.||    &8● &7Mørkelå bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 30 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 7" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n7 &cskal du&8:||    &8● &7Have 9 Medlemmer||    &8● &7Mindst have &a$&720000 i bande-banken (bliver taget)||    &8● &7Mindst have 100 fangekills||    &8● &7Mindst 5 vagtkills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 8:	
+		set slot 31 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 8" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &720 Medlemmer maks.||    &8● &7Gul bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 31 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 8" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n8 &cskal du&8:||    &8● &7Have 15 Medlemmer||    &8● &7Mindst have &a$&725000 i bande-banken (bliver taget)||    &8● &7Mindst have 125 fangekills||    &8● &7Mindst 7 vagtkills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 9:	
+		set slot 32 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 9" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &725 Medlemmer maks.||    &8● &7Lilla bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 32 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 9" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n9 &cskal du&8:||    &8● &7Have 20 Medlemmer||    &8● &7Mindst have &a$&730000 i bande-banken (bliver taget)||    &8● &7Mindst have 150 fangekills||    &8● &7Mindst 10 vagtkills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	if {bande.level.%{bande.%{_uuid}%}%} >= 10:	
+		set slot 33 of {_bandelevel} to light green stained glass pane named "&2&lLEVEL 10" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&aInformation&8:||    &8● &745 Medlemmer maks.||    &8● &7Rød og regnbue bande-farve||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 33 of {_bandelevel} to red stained glass pane named "&4&lLEVEL 10" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cFor at komme i level &4&n10 &cskal du&8:||    &8● &7Have 25 Medlemmer||    &8● &7Mindst have &a$&775000 i bande-banken (bliver taget)||    &8● &7Mindst have 200 fangekills||    &8● &7Mindst 20 vagtkills||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	open {_bandelevel} to {_p}
+
+function bandeLevelUp(p: player, current: int, next: int, fk: int, vk: int, m: int, money: int, newm: int):
+	set {_uuid} to uuid of {_p}
+	if {bande.level.%{bande.%{_uuid}%}%} = {_current}:
+		if {bande.vagt.kills.%{bande.%{_uuid}%}%} >= {_vk}:
+			if {bande.fange.kills.%{bande.%{_uuid}%}%} >= {_fk}:
+				set {_size} to size of {bande.members.%{bande.%{_uuid}%}%::*}
+				if {_size} >= {_m}:
+					if {bande.bal.%{bande.%{_uuid}%}%} >= {_money}:
+						close {_p}'s inventory
+						set {bande.level.%{bande.%{_uuid}%}%} to {_next}
+						subtract {_money} from {bande.bal.%{bande.%{_uuid}%}%}
+						set {bande.max.members.%{bande.%{_uuid}%}%} to {_newm}
+						loop {bande.members.%{bande.%{_uuid}%}%::*}:
+							send loop-value title "&2&lBANDE LEVELUP!" with subtitle "&a&l%{_current}% &8➜ &a&l%{_next}%" for 4 seconds
+							create fake explosion at location of loop-value
+					else:
+						send "%{bande.global.prefix}% Dette har din bande ikke nok penge til!" to {_p}
+				else:
+					send "%{bande.global.prefix}% Din bande har ikke nok medlemmer til dette!" to {_p}
+			else:
+				send "%{bande.global.prefix}% Din bande har ikke nok fange kills til dette!" to {_p}
+		else:
+			send "%{bande.global.prefix}% Din bande har ikke nok vagt kills til dette!" to {_p}
+
+function bandeShop(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_bandeshop} to chest inventory with 5 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lSHOP"
+	if {bande.damage.%{bande.%{_uuid}%}%} is not set:
+		set {bande.damage.%{bande.%{_uuid}%}%} to 0
+	if {bande.damage.price.%{bande.%{_uuid}%}%} is not set:
+		set {bande.damage.price.%{bande.%{_uuid}%}%} to 250
+	set slot 0, 2, 4, 6, 8, 36, 38, 40, 42 and 44 of {_bandeshop} to blue stained glass pane named " " with lore " "
+	set slot 1, 3, 5, 7, 37, 39, 41 and 43 of {_bandeshop} to white stained glass pane named " " with lore " "
+	if {bande.level.%{bande.%{_uuid}%}%} >= 4:
+		if {bande.damage.%{bande.%{_uuid}%}%} < 100:
+			set slot 21 of {_bandeshop} to iron sword named "&c&lBANDE DAMAGE" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&a%{bande.damage.%{bande.%{_uuid}%}%}%&8/&c100||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+		else:
+			set slot 21 of {_bandeshop} to shiny iron sword named "&2&lBANDE DAMAGE" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&a%{bande.damage.%{bande.%{_uuid}%}%}%&8/&c100||&7Færdig udviklet||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	else:
+		set slot 21 of {_bandeshop} to barrier named "&4&l&nBANDE DAMAGE" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&cDenne funktion er låst, indtil din bande kommer i level 4!||&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7"
+	set slot 23 of {_bandeshop} to light green dye named "&2&lBANDE FARVE" with lore "&7||&8&m--&7&m--&f&m--&7&m--&8&m--||&7||&7Klik her!||&7||&8&m--&7&m--&f&m--&7&m--&8&m--"
+	open {_bandeshop} to {_p}
+
+function buyBandeDamage(p: player):
+	set {_uuid} to uuid of {_p}
+	if {bande.owner.%{bande.%{_uuid}%}%} is {_p}:
+		if {bande.damage.%{bande.%{_uuid}%}%} < 100:
+			if {bande.bal.%{bande.%{_uuid}%}%} >= {bande.damage.price.%{bande.%{_uuid}%}%}:
+				close {_p}'s inventory
+				bandeShop({_p})
+				add 1 to {bande.damage.%{bande.%{_uuid}%}%}
+				subtract {bande.damage.price.%{bande.%{_uuid}%}%} from {bande.bal.%{bande.%{_uuid}%}%}
+				set {_+} to a random integer between 1 and 100
+				add {_+} to {bande.damage.price.%{bande.%{_uuid}%}%}
+			else:
+				send "%{bande.global.prefix}% Dette har din bande ikke råd til!" to {_p}
+		else:
+			stop
+	else:
+		if {bande.rank.%{_p}%} is "Assistant":
+			if {bande.damage.%{bande.%{_uuid}%}%} < 100:
+				if {bande.bal.%{bande.%{_uuid}%}%} >= {bande.damage.price.%{bande.%{_uuid}%}%}:
+					close {_p}'s inventory
+					bandeShop({_p})
+					add 1 to {bande.damage.%{bande.%{_uuid}%}%}
+					subtract {bande.damage.price.%{bande.%{_uuid}%}%} from {bande.bal.%{bande.%{_uuid}%}%}
+					set {_+} to a random integer between 1 and 100
+					add {_+} to {bande.damage.price.%{bande.%{_uuid}%}%}
+				else:
+					send "%{bande.global.prefix}% Dette har din bande ikke råd til!" to {_p}
+			else:
+				stop
+		else:
+			close {_p}'s inventory
+			send "%{bande.global.prefix}% Dette kan du ikke, da du hverken er assistant eller ejer af banden." to {_p}
+			
+
+function bandeFarve(p: player):
+	set {_uuid} to uuid of {_p}
+	if {bande.owner.%{bande.%{_uuid}%}%} is {_p}:
+		set {_bandefarve} to chest inventory with 1 row named "{@mainColor}&lBANDE &8➜ {@mainColor}&lFARVE"
+		set slot 0 of {_bandefarve} to light green dye named "&aLysegrøn" with lore "&aLevel 2"
+		set slot 1 of {_bandefarve} to magenta dye named "&dPink" with lore "&aLevel 3"
+		set slot 2 of {_bandefarve} to orange dye named "&6Guld" with lore "&aLevel 4"
+		set slot 3 of {_bandefarve} to cyan dye named "&3Cyan" with lore "&aLevel 5"
+		set slot 4 of {_bandefarve} to cactus green named "&2Mørkegrøn" with lore "&aLevel 6"
+		set slot 5 of {_bandefarve} to 351:4 named "&9Mørkeblå" with lore "&aLevel 7"
+		set slot 6 of {_bandefarve} to purple dye named "&5Lilla" with lore "&aLevel 8"
+		set slot 7 of {_bandefarve} to dandelion yellow named "&eGul" with lore "&aLevel 9"
+		set slot 8 of {_bandefarve} to red dye named "&cRød" with lore "&aLevel 10"
+		open {_bandefarve} to {_p}
+	else:
+		send "%{bande.global.prefix}% Kun ejeren har adgang til denne funktion" to {_p}
+
+on inventory close:
+	set {_name} to name of event-inventory
+	if {_name} contains "{@mainColor}&lBANDE &8➜ {@mainColor}&lMANAGE &8➜":
+		delete {chosen.manager.%{bande.%uuid of player%}%}
+
+on inventory click:
+	set {_name} to name of event-inventory
+	if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lMAIN":
+		cancel event
+		if {bande.%uuid of player%} is not set:
+			if clicked slot = 22:
+				close player's inventory
+				set {bande.opretter.%uuid of player%} to true
+				send "%{bande.global.prefix}% Skriv hvad din bande skal hedde i chatten, skriv {@mainColor}!cancel{@secondColor} hvis du vil annullere"
+		else:	
+			if clicked slot = 25:
+				bandeMedlemmer(player)
+			else if clicked slot = 21:
+				bandePenge(player)
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lMEDLEMMER":
+		cancel event
+		if clicked item = player head:
+			if {bande.owner.%{bande.%uuid of player%}%} is player:
+				set {_target} to (name of clicked item)
+				bandeManage(player, {_target})
+	else if {_name} contains "{@mainColor}&lBANDE &8➜ {@mainColor}&lMANAGE &8➜":
+		cancel event
+		if clicked slot = 15:
+			if {chosen.manager.%{bande.%uuid of player%}%} is set:
+				cancel event
+				bandeKick(player, {chosen.manager.%{bande.%uuid of player%}%})
+			else:
+				send "error"
+		if clicked slot = 11:
+			bandePromote(player, {chosen.manager.%{bande.%uuid of player%}%})
+		if clicked slot = 13:
+			bandeDemote(player, {chosen.manager.%{bande.%uuid of player%}%})
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lØKONOMI":
+		cancel event
+		if {bande.owner.%{bande.%uuid of player%}%} is player:
+			if clicked slot = 10:
+				bandeBank(player)
+			else if clicked slot = 13:
+				bandeLevel(player)
+			else if clicked slot = 16:
+				bandeShop(player)
+		else:
+			if clicked slot = 10:
+				bandeBank(player)
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lBANK":
+		cancel event
+		if clicked slot = 12:
+			set {_deposit} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lDEPOSIT"
+			set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_deposit} to blue stained glass pane named " " with lore " "
+			set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_deposit} to white stained glass pane named " " with lore " "
+			set slot 10 of {_deposit} to paper named "&a$&750" with lore " "
+			set slot 12 of {_deposit} to paper named "&a$&7100" with lore " "
+			set slot 14 of {_deposit} to paper named "&a$&7250" with lore " "
+			set slot 16 of {_deposit} to paper named "&a$&7500" with lore " "
+			open {_deposit} to player
+		if clicked slot = 14:
+			if {bande.owner.%{bande.%uuid of player%}%} is player:
+				set {_withdraw} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lWITHDRAW"
+				set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_withdraw} to blue stained glass pane named " " with lore " "
+				set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_withdraw} to white stained glass pane named " " with lore " "
+				set slot 10 of {_withdraw} to paper named "&a$&750" with lore " "
+				set slot 12 of {_withdraw} to paper named "&a$&7100" with lore " "
+				set slot 14 of {_withdraw} to paper named "&a$&7250" with lore " "
+				set slot 16 of {_withdraw} to paper named "&a$&7500" with lore " "
+				open {_withdraw} to player
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lDEPOSIT":
+		cancel event
+		if clicked slot = 10:
+			if player's balance >= 50:
+				subtract 50 from player's balance
+				add 50 to {bande.bal.%{bande.%uuid of player%}%}
+				send "%{bande.global.prefix}% Du indsatte &a$&750 {@secondColor}i din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+			else:
+				send "%{bande.global.prefix}% Dette har du dsv. ikke råd til."
+		if clicked slot = 12:
+			if player's balance >= 100:
+				subtract 100 from player's balance
+				add 100 to {bande.bal.%{bande.%uuid of player%}%}
+				send "%{bande.global.prefix}% Du indsatte &a$&7100 {@secondColor}i din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+			else:
+				send "%{bande.global.prefix}% Dette har du dsv. ikke råd til."
+		if clicked slot = 14:
+			if player's balance >= 250:
+				subtract 250 from player's balance
+				add 250 to {bande.bal.%{bande.%uuid of player%}%}
+				send "%{bande.global.prefix}% Du indsatte &a$&7250 {@secondColor}i din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+			else:
+				send "%{bande.global.prefix}% Dette har du dsv. ikke råd til."
+		if clicked slot = 16:
+			if player's balance >= 500:
+				subtract 500 from player's balance
+				add 500 to {bande.bal.%{bande.%uuid of player%}%}
+				send "%{bande.global.prefix}% Du indsatte &a$&7500 {@secondColor}i din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+			else:
+				send "%{bande.global.prefix}% Dette har du dsv. ikke råd til."
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lWITHDRAW":
+		cancel event
+		if {bande.owner.%{bande.%uuid of player%}%} is player:
+			if clicked slot is 10:
+				if {bande.bal.%{bande.%uuid of player%}%} >= 50:
+					add 50 to player's balance
+					subtract 50 from {bande.bal.%{bande.%uuid of player%}%}
+					send "%{bande.global.prefix}% Du tog &a$&750 {@secondColor}ud af din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+				else:
+					send "%{bande.global.prefix}% Så mange penge har din bande ikke."
+			if clicked slot is 12:
+				if {bande.bal.%{bande.%uuid of player%}%} >= 100:
+					add 100 to player's balance
+					subtract 100 from {bande.bal.%{bande.%uuid of player%}%}
+					send "%{bande.global.prefix}% Du tog &a$&7100 {@secondColor}ud af din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+				else:
+					send "%{bande.global.prefix}% Så mange penge har din bande ikke."
+			if clicked slot is 14:
+				if {bande.bal.%{bande.%uuid of player%}%} >= 250:
+					add 250 to player's balance
+					subtract 250 from {bande.bal.%{bande.%uuid of player%}%}
+					send "%{bande.global.prefix}% Du tog &a$&7250 {@secondColor}ud af din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+				else:
+					send "%{bande.global.prefix}% Så mange penge har din bande ikke."
+			if clicked slot is 16:
+				if {bande.bal.%{bande.%uuid of player%}%} >= 500:
+					add 500 to player's balance
+					subtract 500 from {bande.bal.%{bande.%uuid of player%}%}
+					send "%{bande.global.prefix}% Du tog &a$&7500 {@secondColor}ud af din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+				else:
+					send "%{bande.global.prefix}% Så mange penge har din bande ikke."
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lLEVEL":
+		cancel event
+		if clicked slot = 21:
+			bandeLevelUp(player, 1, 2, 10, 0, 3, 2500, 5)
+		if clicked slot = 22:
+			bandeLevelUp(player, 2, 3, 25, 0, 4, 5000, 6)
+		if clicked slot = 23:
+			bandeLevelUp(player, 3, 4, 40, 0, 6, 7500, 8)
+		if clicked slot = 24:
+			bandeLevelUp(player, 4, 5, 50, 0, 7, 12500, 10)
+		if clicked slot = 29:
+			bandeLevelUp(player, 5, 6, 75, 1, 9, 15000, 13)
+		if clicked slot = 30:
+			bandeLevelUp(player, 6, 7, 100, 5, 12, 20000, 15)
+		if clicked slot = 31:
+			bandeLevelUp(player, 7, 8, 125, 7, 15, 25000, 20)
+		if clicked slot = 32:
+			bandeLevelUp(player, 8, 9, 150, 10, 20, 30000, 25)
+		if clicked slot = 33:
+			bandeLevelUp(player, 9, 10, 200, 20, 25, 50000, 45)
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lSHOP":
+		cancel event
+		if clicked slot = 21:
+			if {bande.level.%{bande.%uuid of player%}%} >= 4:
+				buyBandeDamage(player)
+			else:
+				close player's inventory
+				send "%{bande.global.prefix}% Din bande skal være i level 4 for at kunne dette!"
+		if clicked slot = 23:
+			bandeFarve(player)
+	else if {_name} = "{@mainColor}&lBANDE &8➜ {@mainColor}&lFARVE":
+		cancel event
+		clicked slot = 0:
+			{bande.level.%{bande.%uuid of player%}%} >= 2:
+				set {bande.color.%{bande.%uuid of player%}%} to "&a"
+				close player's inventory
+		clicked slot = 1:
+			{bande.level.%{bande.%uuid of player%}%} >= 3:
+				set {bande.color.%{bande.%uuid of player%}%} to "&d"
+				close player's inventory
+		clicked slot = 2:
+			{bande.level.%{bande.%uuid of player%}%} >= 4:
+				set {bande.color.%{bande.%uuid of player%}%} to "&6"
+				close player's inventory
+		clicked slot = 3:
+			{bande.level.%{bande.%uuid of player%}%} >= 5:
+				set {bande.color.%{bande.%uuid of player%}%} to "&3"
+				close player's inventory
+		clicked slot = 4:
+			{bande.level.%{bande.%uuid of player%}%} >= 6:
+				set {bande.color.%{bande.%uuid of player%}%} to "&2"
+				close player's inventory
+		clicked slot = 5:
+			{bande.level.%{bande.%uuid of player%}%} >= 7:
+				set {bande.color.%{bande.%uuid of player%}%} to "&9"
+				close player's inventory
+		clicked slot = 6:
+			{bande.level.%{bande.%uuid of player%}%} >= 8:
+				set {bande.color.%{bande.%uuid of player%}%} to "&5"
+				close player's inventory
+		clicked slot = 7:
+			{bande.level.%{bande.%uuid of player%}%} >= 9:
+				set {bande.color.%{bande.%uuid of player%}%} to "&e"
+				close player's inventory
+		clicked slot = 8:
+			{bande.level.%{bande.%uuid of player%}%} >= 10:
+				set {bande.color.%{bande.%uuid of player%}%} to "&c"
+				close player's inventory
+
+on chat:
+	if {bande.opretter.%uuid of player%} is set:
+		cancel event
+		if message = "!cancel":
+			delete {bande.opretter.%uuid of player%}
+			send "%{bande.global.prefix}% Annullere oprettelse af banden.."
+		else:
+			length of message >= 3:
+				length of message <= 15:
+					if {bande.list::*} is set:
+						loop {bande.list::*}:
+							if loop-value = message:
+								set {_taken} to true
+						if {_taken} is not set:
+							delete {bande.opretter.%uuid of player%}
+							bandeOpret(player, message)
+						else:
+							send "%{bande.global.prefix}% Dette navn er dsv. taget"
+					else:
+						delete {bande.opretter.%uuid of player%}
+						bandeOpret(player, message)
+				else:
+					send "%{bande.global.prefix}% Dette navn er dsv. for langt"
+			else:
+				send "%{bande.global.prefix}% Dette navn er dsv. for kort"
+
+command /bande [<text>] [<text>] [<text>]:
+	aliases: /gang
+	trigger:
+		if arg-1 is not set:
+			bandeMain(player)
+		else if arg-1 = "opret" or "create":
+			if arg-2 is not set:
+				set {bande.opretter.%uuid of player%} to true
+				send "%{bande.global.prefix}% Skriv hvad din bande skal hedde i chatten, skriv {@mainColor}!cancel{@secondColor} hvis du vil annullere"
+			else:
+				if length of arg-2 >= 3:
+					if length of arg-2 <= 15:
+						if {bande.list::*} is set:
+							loop {bande.list::*}:
+								if loop-value = arg-2:
+									set {_taken} to true
+							if {_taken} is not set:
+								bandeOpret(player, arg-2)
+							else:
+								send "%{bande.global.prefix}% Dette navn er dsv. taget"
+						else:
+							bandeOpret(Player, arg-2)
+					else:
+						send "%{bande.global.prefix}% Dette navn er dsv. for langt"
+				else:
+					send "%{bande.global.prefix}% Dette navn er dsv. for kort"
+		if arg-1 is not "opret" or "create":
+			if {bande.%uuid of player%} is set:
+				if arg-1 is "forlad" or "leave":
+					if arg-2 is not set:
+						send "%{bande.global.prefix}% Er du sikker på du vil forlade din bande? Hvis du er ejer sletter dette din bande, du kan ændre ejer først &8[<tooltip:&7Klik for at forlade din bande!><cmd:/bande forlad yes> &a&lJA <reset>&8]"
+					else:
+						if arg-2 is "yes":
+							forladBande(player)
+						else:
+							send "%{bande.global.prefix}% Er du sikker på du vil forlade din bande? Hvis du er ejer sletter dette din bande, du kan ændre ejer først &8[<tooltip:&7Klik for at forlade din bande!><cmd:/bande forlad yes> &a&lJA <reset>&8]"
+				else if arg-1 = "invite" or "inviter":
+					if arg-2 parsed as a player is set:
+						if {bande.%uuid of player%} is set:
+							if {bande.owner.%{bande.%uuid of player%}%} is player:
+								bandeInvite(player, arg-2 parsed as a player)
+							else if {bande.rank.%uuid of player%} = "Assistant":
+								bandeInvite(player, arg-2 parsed as a player)
+							else:
+								send "%{bande.global.prefix}% Kun ejeren kan invitere folk til banden"
+						else:
+							send "%{bande.global.prefix}% Du er ikke medlem af nogen bande.."
+					else:
+						send "%{bande.global.prefix}% Korrekt brug: /Bande inviter <spiller>"
+				else if arg-1 = "accepter", "acc" or "join":
+					if {bande.invite.%player%} is set:
+						if {bande.%player%} is not set:
+							bandeAccepter(player)
+						else:
+							send "%{bande.global.prefix}% Du er allerede med i en bande"
+					else:
+						send "%{bande.global.prefix}% Du er ikke inviteret til nogen bande"
+				else if arg-1 = "kick", "promote", "demote", "forfrem" or "ban":
+					if arg-2 parsed as a player is set:
+						bandeManage(player, arg-2)
+					else:
+						bandeMedlemmer(player)
+				else if arg-1 = "bank":
+					bandeBank(player)
+				else if arg-1 is "deposit" or "indsæt":
+					if arg-2 parsed as a integer is not set:
+						set {_deposit} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lDEPOSIT"
+						set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_deposit} to blue stained glass pane named " " with lore " "
+						set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_deposit} to white stained glass pane named " " with lore " "
+						set slot 10 of {_deposit} to paper named "&a$&750" with lore " "
+						set slot 12 of {_deposit} to paper named "&a$&7100" with lore " "
+						set slot 14 of {_deposit} to paper named "&a$&7250" with lore " "
+						set slot 16 of {_deposit} to paper named "&a$&7500" with lore " "
+						open {_deposit} to player
+					else:
+						if player's balance >= arg-2 parsed as a integer:
+							add arg-2 parsed as a integer to {bande.bal.%{bande.%uuid of player%}%}
+							subtract arg-2 parsed as a integer from player's balance
+							send "%{bande.global.prefix}% Du indsatte &a$&7%arg-2% {@secondColor}i din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+						else:
+							send "%{bande.global.prefix}% Dette har du ikke råd til!"
+				else if arg-1 is "withdraw":
+					if {bande.owner.%{bande.%uuid of player%}%} is player:
+						if arg-2 parsed as a integer is not set:
+							set {_withdraw} to chest inventory with 3 rows named "{@mainColor}&lBANDE &8➜ {@mainColor}&lWITHDRAW"
+							set slot 0, 2, 4, 6, 8, 18, 20, 22, 24 and 26 of {_withdraw} to blue stained glass pane named " " with lore " "
+							set slot 1, 3, 5, 7, 19, 21, 23 and 25 of {_withdraw} to white stained glass pane named " " with lore " "
+							set slot 10 of {_withdraw} to paper named "&a$&750" with lore " "
+							set slot 12 of {_withdraw} to paper named "&a$&7100" with lore " "
+							set slot 14 of {_withdraw} to paper named "&a$&7250" with lore " "
+							set slot 16 of {_withdraw} to paper named "&a$&7500" with lore " "
+							open {_withdraw} to player
+						else:
+							if {bande.bal.%{bande.%uuid of player%}%} >= arg-2 parsed as a integer:
+								add arg-2 parsed as a integer to player's balance
+								subtract arg-2 parsed as a integer from {bande.bal.%{bande.%uuid of player%}%}
+								send "%{bande.global.prefix}% Du tog &a$&7%arg-2% {@secondColor}ud af din bande-bank (din bande har nu &a$&7%{bande.bal.%{bande.%uuid of player%}%}%{@secondColor})"
+							else:
+								send "%{bande.global.prefix}% Dette har din bande ikke råd til!"
+					else:
+						send "%{bande.global.prefix}% Kun ejeren af banden har adgang til denne funktion!"
+				else if arg-1 is "level", "rankup" or "levelup":
+					if {bande.owner.%{bande.%uuid of player%}%} is player:
+						bandeLevel(player)
+					else:
+						send "%{bande.global.prefix}% Kun ejeren af banden har adgang til denne funktion!"
+				else if arg-1 is "shop":
+					bandeShop(player)
+				else if arg-1 is "information" or "info":
+					if arg-2 is set:
+						if {bande.list::*} contains arg-2:
+							send "&8&m---&7&m---&f&m---&7&m---&8&m---"
+							send "{@mainColor}Ejer&8: {@secondColor}%{bande.owner.%arg-2%}%"
+							send "{@mainColor}Level&8: {@secondColor}%{bande.level.%arg-2%}%"
+							send "{@mainColor}Penge i banken&8: {@secondColor}%{bande.bal.%arg-2%}%"
+							send "{@mainColor}Fange kills&8: {@secondColor}%{bande.fange.kills.%arg-2%}%"
+							send "{@mainColor}Vagt kills&8: {@secondColor}%{bande.vagt.kills.%arg-2%}%"
+							send "&8&m---&7&m---&f&m---&7&m---&8&m---"
+						else:
+							send "%{bande.global.prefix}% Denne bande findes ikke."
+					else:
+						send "%{bande.global.prefix}% Skriv venligst en bande"
+				else if arg-1 is "farve" or "color":
+					bandeFarve(player)
+					
+			else:
+				send "%{bande.global.prefix}% Du er ikke medlem af nogen bande!"
