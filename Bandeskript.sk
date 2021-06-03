@@ -205,7 +205,7 @@ function bandePromote(p: player, t: player):
 		send "%{bande.global.prefix}% Du har forfremmet {@mainColor}%{_t}% {@secondColor}til {@mainColor}Owner{@secondColor}!" to {_p}
 		bandeManage({_p}, "%{_t}%")
 	else:
-		broadcast "%{bande.global.prefix}% Error! Kontakt en adminstrator, eller {@mainColor}PepeSquad_##6558 {@secondColor}på discord!"
+		broadcast "%{bande.global.prefix}% Error! Kontakt en adminstrator.
 
 function bandeDemote(p: player, t: player):
 	set {_uuid} to uuid of {_p}
